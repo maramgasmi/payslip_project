@@ -10,6 +10,7 @@ class PayslipBase(BaseModel):
     bonus:float
     deductions:float
     net_salary: float
+    gross_salary: float 
     period_start: date
     period_end: date
     company_name: str
@@ -21,6 +22,6 @@ class PayslipCreate(PayslipBase):
     pass 
 
 class PayslipResponse(PayslipBase):
-    id: int 
-    class Config:
-        orm_mode= True
+    id: int
+
+    model_config = {"from_attributes": True}

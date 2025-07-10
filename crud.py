@@ -1,8 +1,12 @@
 from sqlalchemy.orm import Session
-import models, schemas
+import schemas 
+import crud 
+import models 
 
 def create_payslip (db: Session, payslip: schemas.PayslipCreate):
-    db_payslip= models.Payslip(**payslip.dict())
+    payslip_data = payslip.dict()
+    payslip_data['net_salary'] = payslip_data['gross_salary'] - payslip_data['deductions']
+    db_payslip = models.Payslip(**payslip_data)
     db.add(db_payslip)
     db.commit()
     db.refresh(db_payslip)
@@ -22,3 +26,14 @@ def delete_payslip(db: Session, payslip_id: int):
         db.commit()
         return True 
     return False
+
+def update_payslip(db: Session, payslip_id: int, updated_data: schemas.PayslipCreate):
+    payslip = get_payslip(db, payslip_id)
+    if not payslip:
+        return None
+    for field, value in updated_data.dict().items():
+        setattr(payslip, field, value)
+    payslip.net_salary = payslip.gross_salary - payslip.deductions  # recalcule
+    db.commit()
+    db.refresh(payslip)
+    return payslip
