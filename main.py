@@ -2,8 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
-from fastapi.responses import FileResponse
+from xhtml2pdf import pisa
 import os
 
 
@@ -58,22 +57,18 @@ def update(id: int, payslip: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Payslip not found")
     return updated
 
-def generate_pdf(payslip):
+def generate_pdf(payslip_data):
     env = Environment(loader=FileSystemLoader("templates"))
     template = env.get_template("payslip_template.html")
-    html_content = template.render(**payslip)
-    pdf_path = f"payslip_{payslip['id']}.pdf"
-    HTML(string=html_content).write_pdf(pdf_path)
+    html_content = template.render(**payslip_data)
+
+    pdf_path = f"payslip_{payslip_data['id']}.pdf"
+
+    # Write the PDF file
+    with open(pdf_path, "w+b") as pdf_file:
+        pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
+
+    if pisa_status.err:
+        raise Exception("PDF generation failed")
+
     return pdf_path
-
-@app.get("/payslips/{id}/pdf")
-def get_payslip_pdf(id: int, db: Session = Depends(get_db)):
-    import schemas
-    import crud 
-    payslip = crud.get_payslip(db, id)
-    if not payslip:
-        raise HTTPException(status_code=404, detail="Payslip not found")
-
-    payslip_data = schemas.PayslipResponse.from_attributes(payslip).model_dump()
-    pdf_path = generate_pdf(payslip_data)
-    return FileResponse(path=pdf_path, filename=os.path.basename(pdf_path), media_type="application/pdf")
