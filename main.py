@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
-from jinja2 import Environment, FileSystemLoader
-from xhtml2pdf import pisa
-import os
+from fastapi.responses import FileResponse
+from pdf_generator import generate_pdf
+from database import Base, engine
+import models
 
+models.Base.metadata.create_all(bind=engine)
 
-Base.metadata.create_all(bind=engine)
 app = FastAPI()
 def get_db():
     db = SessionLocal()
@@ -56,19 +57,16 @@ def update(id: int, payslip: dict, db: Session = Depends(get_db)):
     if not updated:
         raise HTTPException(status_code=404, detail="Payslip not found")
     return updated
+@app.get("/payslips/{id}/pdf")
+def get_payslip_pdf(id: int, db: Session = Depends(get_db)):
+    import crud 
+    import schemas
+    import os
+    payslip = crud.get_payslip(db, id)
+    if not payslip:
+        raise HTTPException(status_code=404, detail="Payslip not found")
 
-def generate_pdf(payslip_data):
-    env = Environment(loader=FileSystemLoader("templates"))
-    template = env.get_template("payslip_template.html")
-    html_content = template.render(**payslip_data)
+    payslip_data = schemas.PayslipResponse.from_orm(payslip).model_dump()
+    pdf_path = generate_pdf(payslip_data)
 
-    pdf_path = f"payslip_{payslip_data['id']}.pdf"
-
-    # Write the PDF file
-    with open(pdf_path, "w+b") as pdf_file:
-        pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
-
-    if pisa_status.err:
-        raise Exception("PDF generation failed")
-
-    return pdf_path
+    return FileResponse(pdf_path, media_type="application/pdf", filename=os.path.basename(pdf_path))

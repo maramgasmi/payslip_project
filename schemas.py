@@ -14,8 +14,8 @@ class PayslipBase(BaseModel):
     period_start: date
     period_end: date
     company_name: str
-    company_adress:str
-    date_isuued:date
+    company_address:str
+    date_issued:date
     status : str
 
 class PayslipCreate(PayslipBase):
@@ -24,4 +24,5 @@ class PayslipCreate(PayslipBase):
 class PayslipResponse(PayslipBase):
     id: int
 
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True

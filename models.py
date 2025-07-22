@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float , Date
-from database import Base
+from  sqlalchemy  import Column, Integer, String, Float , Date
+from database import Base 
+
 
 class Payslip(Base):
     __tablename__="payslips"
@@ -15,6 +16,6 @@ class Payslip(Base):
     period_start= Column(Date)
     period_end= Column(Date)
     company_name= Column(String)
-    company_adress=Column(String)
-    date_isuued= Column(Date)
+    company_address=Column(String)
+    date_issued= Column(Date)
     status = Column(String)
